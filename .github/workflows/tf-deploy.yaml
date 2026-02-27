@@ -29,6 +29,7 @@ env:
 jobs:
   terraform:
     runs-on: ubuntu-22.04
+    environment: dev   # REQUIRED to access env vars like vars.IAM_ROLE
     defaults:
       run:
         shell: bash
