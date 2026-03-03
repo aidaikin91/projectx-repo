@@ -1,0 +1,3 @@
+hostname: grafana-ubuntu-dev.312ubuntu.com
+whitelistSourceRange: "98.212.213.22/32"
+ingressClassName: nginx
