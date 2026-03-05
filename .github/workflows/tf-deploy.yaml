@@ -84,7 +84,7 @@ jobs:
             -backend-config="key=${{ steps.vars.outputs.env }}/terraform.tfstate" \
             -backend-config="region=${{ env.AWS_REGION }}" \
             -backend-config="encrypt=true" \
-            -backend-config="dynamodb_table=665832051028-terraform-lock-dev"
+            -backend-config="dynamodb_table=060623762260-terraform-lock-dev"
 
       - name: Terraform Format (recursive)
         run: terraform fmt -recursive -check
