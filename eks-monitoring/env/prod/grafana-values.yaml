@@ -1,3 +1,1 @@
-hostname: grafana-ubuntu-prod.312ubuntu.com
-whitelistSourceRange: "98.212.213.22/32"
-ingressClassName: nginx
+hostname: grafana-prod.25b-memo.online

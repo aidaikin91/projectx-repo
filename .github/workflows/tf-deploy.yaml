@@ -5,6 +5,11 @@ on:
     branches:
       - feature/**
       - main
+    # Optional: run workflow only when infra/monitoring changed
+    # paths:
+    #   - "roots/**"
+    #   - "eks-monitoring/**"
+    #   - ".github/workflows/**"
   workflow_dispatch:
     inputs:
       environment:
@@ -23,17 +28,24 @@ permissions:
 env:
   AWS_REGION: us-east-1
   TF_VERSION: 1.6.6
-  TF_ROOT: ./roots/devops-project-main  # <- your simple root folder
-  STATE_BUCKET: 665832051028-terraform-state-dev
+  TF_ROOT: ./roots/devops-project-main
+  STATE_BUCKET: 665832051028-projectx-tfstate
+  CLUSTER_NAME: projectx_cluster_ubuntu25b
+  MONITORING_NAMESPACE: monitoring
 
 jobs:
   terraform:
     runs-on: ubuntu-22.04
-    environment: dev   # REQUIRED to access env vars like vars.IAM_ROLE
+    environment: dev # REQUIRED to access env vars like vars.IAM_ROLE
+
     defaults:
       run:
         shell: bash
         working-directory: ${{ env.TF_ROOT }}
+
+    outputs:
+      env: ${{ steps.vars.outputs.env }}
+      destroy: ${{ steps.vars.outputs.destroy }}
 
     steps:
       - name: Checkout
@@ -74,7 +86,6 @@ jobs:
             -backend-config="encrypt=true" \
             -backend-config="dynamodb_table=665832051028-terraform-lock-dev"
 
-
       - name: Terraform Format (recursive)
         run: terraform fmt -recursive -check
 
@@ -87,3 +98,65 @@ jobs:
       - name: Terraform Apply (main only)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.vars.outputs.destroy == 'false'
         run: terraform apply -auto-approve -input=false -var-file=${{ steps.vars.outputs.env }}.tfvars
+
+  monitoring:
+    runs-on: ubuntu-22.04
+    needs: terraform
+    environment: dev
+
+    # Deploy monitoring ONLY after successful main push (and not destroy)
+    if: >
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.terraform.outputs.destroy == 'false' &&
+      needs.terraform.result == 'success'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.IAM_ROLE }}
+          role-session-name: GitHubActionsSession
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify identity
+        run: aws sts get-caller-identity
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --name "${{ env.CLUSTER_NAME }}" \
+            --region "${{ env.AWS_REGION }}"
+
+      - name: Helm lint (charts)
+        run: |
+          helm lint ./eks-monitoring/charts/prometheus
+          helm lint ./eks-monitoring/charts/grafana
+
+      - name: Deploy Prometheus (Helm)
+        run: |
+          helm upgrade --install prometheus ./eks-monitoring/charts/prometheus \
+            -n "${{ env.MONITORING_NAMESPACE }}" \
+            --create-namespace
+
+      - name: Deploy Grafana (Helm)
+        run: |
+          helm upgrade --install grafana ./eks-monitoring/charts/grafana \
+            -n "${{ env.MONITORING_NAMESPACE }}" \
+            -f ./eks-monitoring/env/dev/grafana-values.yaml
+
+      - name: Show status
+        run: |
+          kubectl get pods -n "${{ env.MONITORING_NAMESPACE }}"
+          kubectl get svc -n "${{ env.MONITORING_NAMESPACE }}"
+          kubectl get ingress -n "${{ env.MONITORING_NAMESPACE }}" || true
+          helm list -n "${{ env.MONITORING_NAMESPACE }}"
