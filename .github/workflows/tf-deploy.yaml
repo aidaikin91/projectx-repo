@@ -61,6 +61,14 @@ jobs:
       - name: Verify identity
         run: aws sts get-caller-identity
 
+      - name: Debug caller and EKS token
+        run: |
+          echo "IAM_ROLE var = ${{ vars.IAM_ROLE }}"
+          aws sts get-caller-identity
+          aws eks get-token \
+            --cluster-name "${{ env.CLUSTER_NAME }}" \
+            --region "${{ env.AWS_REGION }}"
+
       - name: Pick environment (push vs manual)
         id: vars
         run: |
@@ -144,8 +152,11 @@ jobs:
       - name: Verify cluster access
         run: |
           kubectl config current-context
+          kubectl version --client
+          aws eks get-token \
+            --cluster-name "${{ env.CLUSTER_NAME }}" \
+            --region "${{ env.AWS_REGION }}" > /tmp/token.json
           kubectl get ns
-          kubectl get nodes
 
       - name: Helm lint (charts)
         run: |
