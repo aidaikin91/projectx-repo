@@ -21,7 +21,6 @@ permissions:
   contents: read
 
 env:
-  env:
   AWS_REGION: us-east-1
   TF_VERSION: 1.6.6
   TF_ROOT: ./roots/devops-project-main
@@ -45,7 +44,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -66,11 +65,11 @@ jobs:
         id: vars
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "env=${{ inputs.environment }}" >> $GITHUB_OUTPUT
-            echo "destroy=${{ inputs.destroy }}" >> $GITHUB_OUTPUT
+            echo "env=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
+            echo "destroy=${{ inputs.destroy }}" >> "$GITHUB_OUTPUT"
           else
-            echo "env=dev" >> $GITHUB_OUTPUT
-            echo "destroy=false" >> $GITHUB_OUTPUT
+            echo "env=dev" >> "$GITHUB_OUTPUT"
+            echo "destroy=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Terraform Init (remote state)
@@ -82,11 +81,10 @@ jobs:
             -backend-config="encrypt=true" \
             -backend-config="dynamodb_table=060623762260-terraform-lock-dev"
 
-      # ✅ TEMP DEBUG: confirm Actions sees same state (should show EKS cluster in list)
       - name: Debug state
         run: |
           pwd
-          terraform workspace show
+          terraform workspace show || true
           terraform state list | grep aws_eks_cluster || true
 
       - name: Terraform Format (recursive)
@@ -102,6 +100,10 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.vars.outputs.destroy == 'false'
         run: terraform apply -auto-approve -input=false -var-file=${{ steps.vars.outputs.env }}.tfvars
 
+      - name: Terraform Destroy (manual only)
+        if: github.event_name == 'workflow_dispatch' && steps.vars.outputs.destroy == 'true'
+        run: terraform destroy -auto-approve -input=false -var-file=${{ steps.vars.outputs.env }}.tfvars
+
   monitoring:
     runs-on: ubuntu-22.04
     needs: terraform
@@ -115,7 +117,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -138,6 +140,12 @@ jobs:
           aws eks update-kubeconfig \
             --name "${{ env.CLUSTER_NAME }}" \
             --region "${{ env.AWS_REGION }}"
+
+      - name: Verify cluster access
+        run: |
+          kubectl config current-context
+          kubectl get ns
+          kubectl get nodes
 
       - name: Helm lint (charts)
         run: |
