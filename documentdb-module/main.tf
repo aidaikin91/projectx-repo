@@ -1,5 +1,5 @@
 locals {
-  name_prefix = "${var.project_name}-${var.environment}-docdb"
+  name_prefix = replace("${var.project_name}-${var.environment}", "_", "-")
 }
 
 resource "random_password" "docdb_password" {
