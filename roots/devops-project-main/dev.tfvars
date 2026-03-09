@@ -16,5 +16,5 @@ desired_capacity = 4
 enable_addons    = true
 
 docdb_db_name        = "proshop"
-docdb_instance_type  = "db.t3.medium"
+docdb_instance_class = "db.t3.medium"
 docdb_instance_count = 1
