@@ -1,68 +1,68 @@
 locals {
-    name_prefix = "${var.project_name}-${var.environment}-docdb"
+  name_prefix = "${var.project_name}-${var.environment}-docdb"
 }
 
 resource "random_password" "docdb_password" {
-    length = 20
-    special = true
-    override_special = "!#$%&*()-_=+[]{}<>:?"
+  length           = 20
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
 resource "aws_security_group" "documentdb_sg" {
-    name = "${local.name_prefix}-sg"
-    description = "Security group for DocumentDB"
-    vpc_id = var.vpc_id
+  name        = "${local.name_prefix}-sg"
+  description = "Security group for DocumentDB"
+  vpc_id      = var.vpc_id
 
-    tags = {
-        Name = "${local.name_prefix}-sg"
-        Environment = var.environment
-        Project = var.project_name
-    }
+  tags = {
+    Name        = "${local.name_prefix}-sg"
+    Environment = var.environment
+    Project     = var.project_name
+  }
 }
 
 resource "aws_vpc_security_group_ingress_rule" "docdb_ingress" {
-    for_each = toset(var.allowed_cidr_blocks)
-    security_group_id = aws_security_group.documentdb_sg.id
-    cidr_ipv4 = each.value
-    from_port = var.port
-    to_port = var.port
-    ip_protocol = "tcp"
-    description = "Allow DocumentDB access from approved CIDR"
+  for_each          = toset(var.allowed_cidr_blocks)
+  security_group_id = aws_security_group.documentdb_sg.id
+  cidr_ipv4         = each.value
+  from_port         = var.port
+  to_port           = var.port
+  ip_protocol       = "tcp"
+  description       = "Allow DocumentDB access from approved CIDR"
 }
 
 resource "aws_vpc_security_group_egress_rule" "docdb_egress" {
-    security_group_id = aws_security_group.documentdb_sg.id
-    cidr_ipv4 = "0.0.0.0/0"
-    ip_protocol = "-1"
-    description = "Allow all outbound traffic"
+  security_group_id = aws_security_group.documentdb_sg.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+  description       = "Allow all outbound traffic"
 }
 
 resource "aws_docdb_subnet_group" "documentdb" {
-    name = "${local.name_prefix}-subnet-group"
-    subnet_ids = var.private_subnets
+  name       = "${local.name_prefix}-subnet-group"
+  subnet_ids = var.private_subnets
 
-    tags = {
-        Name = "${local.name_prefix}-subnet-group"
-        Environment = var.environment
-        Project = var.project_name
-    }
+  tags = {
+    Name        = "${local.name_prefix}-subnet-group"
+    Environment = var.environment
+    Project     = var.project_name
+  }
 }
 
 resource "aws_docdb_cluster_parameter_group" "documentdb" {
-    family = "docdb5.0"
-    name = "${local.name_prefix}-pg"
-    description = "Custom parameter group for DocumentDB with TLS disabled"
+  family      = "docdb5.0"
+  name        = "${local.name_prefix}-pg"
+  description = "Custom parameter group for DocumentDB with TLS disabled"
 
-    parameter {
-        name = "tls"
-        value = "disabled"
-    }
+  parameter {
+    name  = "tls"
+    value = "disabled"
+  }
 
-    tags = {
-        Name        = "${local.name_prefix}-pg"
-        Environment = var.environment
-        Project     = var.project_name
-    }
+  tags = {
+    Name        = "${local.name_prefix}-pg"
+    Environment = var.environment
+    Project     = var.project_name
+  }
 }
 
 resource "aws_docdb_cluster" "documentdb" {

@@ -33,9 +33,9 @@ module "documentdb-module" {
   vpc_id          = module.vpc-module.vpc_id
   private_subnets = module.vpc-module.private_subnet_ids_ordered
 
-  environment    = var.environment
-  project_name   = var.project_name
-  cluster_name   = var.cluster_name
+  environment  = var.environment
+  project_name = var.project_name
+  cluster_name = var.cluster_name
 
   db_name        = var.docdb_db_name
   instance_class = var.docdb_instance_class

@@ -96,16 +96,16 @@ variable "ec2_types" {
 }
 
 variable "docdb_db_name" {
-  type = string
+  type        = string
   description = "DocumentDB database name"
 }
 
 variable "docdb_instance_class" {
-  type = string
+  type        = string
   description = "DocumentDB instance class"
 }
 
 variable "docdb_instance_count" {
-  type = number
+  type        = number
   description = "Number of DocumentDB instances"
 }
