@@ -30,8 +30,8 @@ module "eks-module" {
 module "documentdb-module" {
   source = "../../documentdb-module"
 
-  vpc_id          = module.vpc-module.vpc_id
-  private_subnets = module.vpc-module.private_subnet_ids_ordered
+  vpc_id                     = module.vpc-module.vpc_id
+  private_subnets            = module.vpc-module.private_subnet_ids_ordered
   eks_node_security_group_id = module.eks-module.node_security_group_id
 
   environment  = var.environment
