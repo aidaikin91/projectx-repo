@@ -47,3 +47,8 @@ output "workers_launch_template_id" {
   description = "Worker nodes launch template ID"
   value       = aws_launch_template.workers_lt.id
 }
+
+output "node_security_group_id" {
+  description = "Security group ID for EKS worker nodes"
+  value       = aws_security_group.eks_node_sg.id
+}

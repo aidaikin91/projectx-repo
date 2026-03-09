@@ -61,3 +61,8 @@ variable "allowed_cidr_blocks" {
   description = "CIDR blocks allowed to reach DocumentDB"
   default     = []
 }
+
+variable "eks_node_security_group_id" {
+  type        = string
+  description = "Security group ID of EKS worker nodes"
+}
