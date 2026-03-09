@@ -94,3 +94,18 @@ variable "ec2_types" {
   type        = list(string)
   description = "Worker node instance types for ASG mixed instances policy"
 }
+
+variable "docdb_db_name" {
+  type = string
+  description = "DocumentDB database name"
+}
+
+variable "docdb_instance_class" {
+  type = string
+  description = "DocumentDB instance class"
+}
+
+variable "docdb_instance_count" {
+  type = number
+  description = "Number of DocumentDB instances"
+}
