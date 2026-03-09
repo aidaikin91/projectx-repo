@@ -41,7 +41,7 @@ variable "instance_count" {
 variable "master_username" {
     type = string
     description = "Master username for DocumentDB"
-    default = proshopadmin
+    default = "proshopadmin"
 }
 
 variable "engine_version" {
